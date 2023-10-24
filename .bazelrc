@@ -1,0 +1,7 @@
+common --enable_bzlmod
+common --experimental_enable_bzlmod
+common --lockfile_mode=off
+build --verbose_failures=true
+build --symlink_prefix=dist/
+query --output=label_kind
+test --test_output=errors
