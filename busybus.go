@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
+	"path/filepath"
 	"time"
 
 	mymazda "github.com/taylormonacelli/forestfish/mymazda"
@@ -17,17 +18,32 @@ func Main() int {
 	return 0
 }
 
-var (
-	CachePath     = "/tmp/data.gob"
-	CacheLifetime = 24 * time.Hour
-)
+type CacheConfig struct {
+	CachePath     string
+	CacheLifetime time.Duration
+}
 
-func DecodeFromCache(target interface{}) error {
-	if !mymazda.FileExists(CachePath) {
+func NewConfig(cacheFilePath string, cacheLifetime time.Duration) (*CacheConfig, error) {
+	dir := filepath.Dir(cacheFilePath)
+	err := os.MkdirAll(dir, 0o755)
+	if err != nil {
+		return nil, err
+	}
+
+	c := CacheConfig{
+		CachePath:     cacheFilePath,
+		CacheLifetime: cacheLifetime,
+	}
+
+	return &c, nil
+}
+
+func DecodeFromCache(c CacheConfig, target interface{}) error {
+	if !mymazda.FileExists(c.CachePath) {
 		return fmt.Errorf("cache file does not exist")
 	}
 
-	byteSlice, err := os.ReadFile(CachePath)
+	byteSlice, err := os.ReadFile(c.CachePath)
 	if err != nil {
 		return err
 	}
@@ -45,7 +61,7 @@ func DecodeFromCache(target interface{}) error {
 	return nil
 }
 
-func SaveToCache(data interface{}) error {
+func SaveToCache(c CacheConfig, data interface{}) error {
 	var buffer bytes.Buffer
 	gob.Register(data)
 
@@ -55,7 +71,7 @@ func SaveToCache(data interface{}) error {
 		return err
 	}
 
-	file, err := os.Create(CachePath)
+	file, err := os.Create(c.CachePath)
 	if err != nil {
 		return err
 	}
@@ -69,8 +85,8 @@ func SaveToCache(data interface{}) error {
 	return nil
 }
 
-func ExpireCache(maxAge time.Duration, filePath string) error {
-	if !mymazda.FileExists(CachePath) {
+func (c *CacheConfig) ExpireCache(maxAge time.Duration, filePath string) error {
+	if !mymazda.FileExists(c.CachePath) {
 		return nil
 	}
 
@@ -83,10 +99,10 @@ func ExpireCache(maxAge time.Duration, filePath string) error {
 	expires := time.Until(fileInfo.ModTime().Add(maxAge)).Truncate(time.Second)
 
 	if age > maxAge {
-		slog.Debug("cache is old", "age", age, "path", CachePath)
-		defer os.Remove(CachePath)
+		slog.Debug("cache is old", "age", age, "path", c.CachePath)
+		defer os.Remove(c.CachePath)
 	} else {
-		slog.Debug("cache not old", "age", age, "expires in", expires, "path", CachePath)
+		slog.Debug("cache stats", "age", age, "expires", expires, "path", c.CachePath)
 	}
 
 	return nil

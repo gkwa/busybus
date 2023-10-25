@@ -5,8 +5,8 @@ import (
 	"log/slog"
 	"os"
 
-	"github.com/taylormonacelli/goldbug"
 	"github.com/taylormonacelli/busybus"
+	"github.com/taylormonacelli/goldbug"
 )
 
 var (
