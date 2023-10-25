@@ -23,27 +23,27 @@ type CacheConfig struct {
 	CacheLifetime time.Duration
 }
 
-func NewConfig(cacheFilePath string, cacheLifetime time.Duration) (*CacheConfig, error) {
-	dir := filepath.Dir(cacheFilePath)
+func NewConfig(cachePath string, cacheLifetime time.Duration) (*CacheConfig, error) {
+	dir := filepath.Dir(cachePath)
 	err := os.MkdirAll(dir, 0o755)
 	if err != nil {
 		return nil, err
 	}
 
 	c := CacheConfig{
-		CachePath:     cacheFilePath,
+		CachePath:     cachePath,
 		CacheLifetime: cacheLifetime,
 	}
 
 	return &c, nil
 }
 
-func DecodeFromCache(c CacheConfig, target interface{}) error {
-	if !mymazda.FileExists(c.CachePath) {
+func DecodeFromCache(cachePath string, target interface{}) error {
+	if !mymazda.FileExists(cachePath) {
 		return fmt.Errorf("cache file does not exist")
 	}
 
-	byteSlice, err := os.ReadFile(c.CachePath)
+	byteSlice, err := os.ReadFile(cachePath)
 	if err != nil {
 		return err
 	}
@@ -61,7 +61,7 @@ func DecodeFromCache(c CacheConfig, target interface{}) error {
 	return nil
 }
 
-func SaveToCache(c CacheConfig, data interface{}) error {
+func SaveToCache(cachePath string, data interface{}) error {
 	var buffer bytes.Buffer
 	gob.Register(data)
 
@@ -71,7 +71,7 @@ func SaveToCache(c CacheConfig, data interface{}) error {
 		return err
 	}
 
-	file, err := os.Create(c.CachePath)
+	file, err := os.Create(cachePath)
 	if err != nil {
 		return err
 	}
