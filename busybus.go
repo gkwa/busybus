@@ -85,20 +85,20 @@ func SaveToCache(c CacheConfig, data interface{}) error {
 	return nil
 }
 
-func (c *CacheConfig) ExpireCache(maxAge time.Duration, filePath string) error {
+func (c *CacheConfig) RemoveExpiredCache() error {
 	if !mymazda.FileExists(c.CachePath) {
 		return nil
 	}
 
-	fileInfo, err := os.Stat(filePath)
+	fileInfo, err := os.Stat(c.CachePath)
 	if err != nil {
 		return err
 	}
 
 	age := time.Since(fileInfo.ModTime()).Truncate(time.Second)
-	expires := time.Until(fileInfo.ModTime().Add(maxAge)).Truncate(time.Second)
+	expires := time.Until(fileInfo.ModTime().Add(c.CacheLifetime)).Truncate(time.Second)
 
-	if age > maxAge {
+	if age > c.CacheLifetime {
 		slog.Debug("cache is old", "age", age, "path", c.CachePath)
 		defer os.Remove(c.CachePath)
 	} else {
